@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사계절 별자리 - 북반구 별자리 여행</title>
+<style>
+  :root{
+    --bg-deep:#05070f;
+    --bg-panel:#0d1226;
+    --bg-panel-2:#131a35;
+    --line:#2a3468;
+    --star:#f5f7ff;
+    --accent:#7dd3fc;
+    --accent-2:#fbbf24;
+    --accent-3:#a78bfa;
+    --text:#e7ebff;
+    --text-dim:#9aa4d0;
+    --spring:#f9a8d4;
+    --summer:#67e8f9;
+    --autumn:#fdba74;
+    --winter:#c4b5fd;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(ellipse at 50% -10%, #131a3d 0%, #05070f 55%, #020308 100%);
+    color:var(--text);
+    font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,sans-serif;
+    min-height:100vh;
+    overflow-x:hidden;
+    position:relative;
+  }
+  #bgstars{position:fixed;inset:0;z-index:0;pointer-events:none;}
+  .wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:28px 20px 60px;}
+
+  header{text-align:center;margin-bottom:22px;}
+  header h1{
+    font-size:clamp(1.6rem,3.4vw,2.4rem);
+    margin:0 0 6px;
+    letter-spacing:0.5px;
+    background:linear-gradient(90deg,#fbbf24,#f9a8d4,#67e8f9,#c4b5fd);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    font-weight:800;
+  }
+  header p{color:var(--text-dim);margin:0;font-size:0.95rem;}
+
+  nav.seasons{
+    display:flex;justify-content:center;gap:10px;margin:26px 0 20px;flex-wrap:wrap;
+  }
+  nav.seasons button{
+    appearance:none;border:1px solid var(--line);background:var(--bg-panel);
+    color:var(--text-dim);padding:10px 18px;border-radius:999px;font-size:0.95rem;
+    cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .25s ease;
+    font-weight:600;
+  }
+  nav.seasons button:hover{color:var(--text);border-color:var(--accent);}
+  nav.seasons button.active{
+    color:#05070f;background:var(--season-color,var(--accent));border-color:transparent;
+    box-shadow:0 0 22px -4px var(--season-color,var(--accent));
+  }
+
+  .season-header{text-align:center;margin-bottom:18px;}
+  .season-header h2{font-size:1.4rem;margin:0 0 4px;color:var(--season-color);}
+  .season-header span{color:var(--text-dim);font-size:0.88rem;}
+
+  .layout{
+    display:grid;grid-template-columns:minmax(0,1.55fr) minmax(280px,1fr);gap:22px;
+    align-items:start;
+  }
+  @media (max-width:880px){
+    .layout{grid-template-columns:1fr;}
+  }
+
+  .stage{
+    background:linear-gradient(180deg,var(--bg-panel) 0%, #080b18 100%);
+    border:1px solid var(--line);border-radius:18px;padding:14px;
+    position:relative;overflow:hidden;
+  }
+  .stage-toolbar{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    margin-bottom:10px;flex-wrap:wrap;
+  }
+  .toolbar-toggles{display:flex;gap:8px;flex-wrap:wrap;}
+  .toggle-btn{
+    border:1px solid var(--line);background:var(--bg-panel-2);color:var(--text-dim);
+    border-radius:8px;padding:6px 12px;font-size:0.8rem;cursor:pointer;transition:.2s;
+  }
+  .toggle-btn.on{background:var(--season-color);color:#05070f;border-color:transparent;font-weight:700;}
+  .hint{font-size:0.78rem;color:var(--text-dim);}
+
+  svg.skymap{width:100%;height:auto;display:block;border-radius:12px;background:
+    radial-gradient(circle at 20% 20%, rgba(125,211,252,0.05), transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(249,168,212,0.05), transparent 45%),
+    #060812;
+  }
+  .con-line{stroke:var(--line);stroke-width:2;fill:none;transition:stroke .3s, stroke-width .3s, opacity .3s;opacity:.55;}
+  .con-group.active .con-line{stroke:var(--season-color);stroke-width:2.6;opacity:1;}
+  .con-group{cursor:pointer;}
+  .star-dot{fill:var(--star);transition:r .2s, filter .2s;}
+  .con-group .star-dot{filter:drop-shadow(0 0 2px rgba(255,255,255,0.5));}
+  .con-group.active .star-dot{filter:drop-shadow(0 0 6px var(--season-color));}
+  .con-group:hover .star-dot{filter:drop-shadow(0 0 8px var(--season-color));}
+  .star-label{
+    fill:var(--text-dim);font-size:11px;pointer-events:none;opacity:0;transition:opacity .25s;
+    font-family:inherit;
+  }
+  .show-labels .star-label{opacity:1;}
+  .con-name-label{
+    fill:var(--season-color);font-size:13px;font-weight:700;opacity:0;transition:opacity .25s;
+    pointer-events:none;
+  }
+  .con-group.active .con-name-label, .con-group:hover .con-name-label{opacity:1;}
+  .asterism-line{
+    stroke-width:1.6;stroke-dasharray:6 6;fill:none;opacity:.85;
+    pointer-events:none;
+  }
+  .asterism-label{font-size:12px;opacity:1;pointer-events:none;font-weight:700;}
+
+  .tooltip{
+    position:absolute;pointer-events:none;background:#10152b;border:1px solid var(--accent);
+    color:var(--text);padding:6px 10px;border-radius:8px;font-size:0.78rem;
+    transform:translate(-50%,-130%);opacity:0;transition:opacity .15s;white-space:nowrap;z-index:5;
+  }
+  .tooltip.show{opacity:1;}
+
+  .sidebar{display:flex;flex-direction:column;gap:14px;}
+  .con-list{
+    background:var(--bg-panel);border:1px solid var(--line);border-radius:16px;padding:10px;
+    display:flex;flex-direction:column;gap:6px;max-height:230px;overflow-y:auto;
+  }
+  .con-item{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:9px 12px;border-radius:10px;cursor:pointer;border:1px solid transparent;
+    color:var(--text-dim);transition:.2s;
+  }
+  .con-item:hover{background:var(--bg-panel-2);color:var(--text);}
+  .con-item.active{background:var(--bg-panel-2);border-color:var(--season-color);color:var(--text);}
+  .con-item .kor{font-weight:700;}
+  .con-item .eng{font-size:0.75rem;color:var(--text-dim);}
+
+  .info-card{
+    background:linear-gradient(180deg,var(--bg-panel) 0%,#0a0e20 100%);
+    border:1px solid var(--line);border-radius:16px;padding:18px;min-height:260px;
+  }
+  .info-card h3{margin:0 0 2px;font-size:1.25rem;color:var(--season-color);}
+  .info-card .eng-name{color:var(--text-dim);font-size:0.85rem;margin-bottom:12px;display:block;}
+  .info-row{display:flex;gap:8px;margin-bottom:10px;font-size:0.85rem;}
+  .info-row .label{color:var(--text-dim);min-width:64px;flex-shrink:0;}
+  .info-card p.desc{font-size:0.88rem;line-height:1.6;color:var(--text);margin:10px 0;}
+  .info-card p.myth{font-size:0.84rem;line-height:1.65;color:var(--text-dim);
+    background:rgba(255,255,255,0.03);border-left:3px solid var(--season-color);
+    padding:10px 12px;border-radius:0 8px 8px 0;margin:12px 0 0;}
+  .info-card p.deepsky{font-size:0.82rem;line-height:1.6;color:var(--accent);margin:10px 0 0;}
+  .placeholder{color:var(--text-dim);font-size:0.9rem;text-align:center;padding:40px 10px;}
+  #asterismToggles{display:contents;}
+
+  footer{text-align:center;color:var(--text-dim);font-size:0.78rem;margin-top:30px;}
+</style>
+</head>
+<body>
+<canvas id="bgstars"></canvas>
+<div class="wrap">
+  <header>
+    <h1>✦ 사계절 별자리 여행 ✦</h1>
+    <p>북반구 중위도에서 계절마다 저녁 하늘에 떠오르는 대표 별자리를 살펴보세요</p>
+  </header>
+
+  <nav class="seasons" id="seasonNav"></nav>
+
+  <div class="season-header">
+    <h2 id="seasonTitle"></h2>
+    <span id="seasonSubtitle"></span>
+  </div>
+
+  <div class="layout">
+    <div class="stage">
+      <div class="stage-toolbar">
+        <div class="toolbar-toggles">
+          <button class="toggle-btn" id="toggleLabels">별 이름 보기</button>
+          <div class="toolbar-toggles" id="asterismToggles"></div>
+        </div>
+        <span class="hint">별자리를 클릭하면 자세한 설명을 볼 수 있어요</span>
+      </div>
+      <div style="position:relative;">
+        <svg class="skymap" id="skymap" viewBox="0 0 1000 640" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="tooltip" id="tooltip"></div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="con-list" id="conList"></div>
+      <div class="info-card" id="infoCard">
+        <div class="placeholder">별자리를 선택하면<br>여기에 설명이 나타납니다 ✨</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>계절별 별자리 위치는 이해를 돕기 위해 단순화하여 표현했습니다 · 북반구 중위도(약 위도 35~40°) 기준 · 별자리 정보는 Star Walk, 국립부산과학관 자료를 참고했습니다</footer>
+</div>
+
+<script>
+/* ---------------- Data ---------------- */
+const SEASONS = {
+  spring: {
+    label:'봄', icon:'🌸', color:'var(--spring)', colorRaw:'#f9a8d4',
+    title:'봄철 별자리', subtitle:'3월 ~ 5월 저녁 9시경 남쪽~동쪽 하늘',
+    asterisms:[
+      { name:'봄의 대삼각형', points:[['bootes','arcturus'],['virgo','spica'],['leo','denebola']] }
+    ],
+    constellations:[
+      {
+        id:'ursaMajor', name:'큰곰자리 (북두칠성)', nameEn:'Ursa Major',
+        desc:'북쪽 하늘에서 일 년 내내 볼 수 있는 국자 모양의 별 무리로, 북극성을 찾는 기준이 됩니다. 두베에서 메그레즈로 이어지는 선을 5배 늘리면 북극성을 찾을 수 있어요.',
+        myth:'그리스 신화에서 제우스의 사랑을 받은 요정 칼리스토가 헤라의 질투로 곰으로 변한 뒤 하늘로 올려져 큰곰자리가 되었다고 전해집니다.',
+        deepsky:'M81(보데 은하), M97(올빼미 성운)',
+        stars:[
+          {id:'dubhe',name:'두베',x:190,y:130,mag:2},
+          {id:'merak',name:'메라크',x:185,y:185,mag:2.4},
+          {id:'phecda',name:'페크다',x:250,y:210,mag:2.4},
+          {id:'megrez',name:'메그레즈',x:300,y:185,mag:3.3},
+          {id:'alioth',name:'알리오트',x:355,y:170,mag:1.8},
+          {id:'mizar',name:'미자르',x:410,y:150,mag:2.2},
+          {id:'alkaid',name:'알카이드',x:460,y:115,mag:1.9}
+        ],
+        lines:[['dubhe','merak'],['merak','phecda'],['phecda','megrez'],['megrez','dubhe'],
+               ['megrez','alioth'],['alioth','mizar'],['mizar','alkaid']]
+      },
+      {
+        id:'bootes', name:'목동자리', nameEn:'Boötes',
+        desc:'주황빛으로 빛나는 1등성 아르크투루스를 품고 있는, 연을 닮은 별자리입니다.',
+        myth:'곰을 지키는 목동으로 그려지며, 큰곰자리(칼리스토)와 작은곰자리를 하늘에서 영원히 지킨다는 이야기가 전해집니다.',
+        stars:[
+          {id:'arcturus',name:'아르크투루스',x:430,y:360,mag:0},
+          {id:'izar',name:'이자르',x:490,y:300,mag:2.4},
+          {id:'seginus',name:'세기누스',x:410,y:250,mag:3},
+          {id:'nekkar',name:'네카르',x:350,y:280,mag:3.5},
+          {id:'muphrid',name:'무프리드',x:395,y:400,mag:2.7}
+        ],
+        lines:[['arcturus','muphrid'],['arcturus','izar'],['izar','seginus'],['seginus','nekkar'],['nekkar','arcturus']]
+      },
+      {
+        id:'coronaBorealis', name:'왕관자리', nameEn:'Corona Borealis',
+        desc:'목동자리 옆에 반원 모양으로 늘어선 아담한 별자리로, 가장 밝은 별 알페카가 왕관의 보석처럼 빛납니다.',
+        myth:'낙소스섬에 버려진 크레타의 공주 아리아드네가 쓰고 있던 왕관을, 그녀와 결혼한 술의 신 디오니소스가 하늘로 던져 올렸다는 이야기가 전해집니다.',
+        deepsky:'은하쌍 NGC 6085/6086',
+        stars:[
+          {id:'nusakan',name:'누사칸',x:530,y:245,mag:3.7},
+          {id:'crb_gamma',name:'감마 코로나이',x:550,y:205,mag:3.8},
+          {id:'alphecca',name:'알페카',x:585,y:190,mag:2.2},
+          {id:'crb_delta',name:'델타 코로나이',x:615,y:205,mag:4.6},
+          {id:'crb_theta',name:'세타 코로나이',x:635,y:240,mag:4.1}
+        ],
+        lines:[['nusakan','crb_gamma'],['crb_gamma','alphecca'],['alphecca','crb_delta'],['crb_delta','crb_theta']]
+      },
+      {
+        id:'virgo', name:'처녀자리', nameEn:'Virgo',
+        desc:'황도 12궁 중 하나로, 청백색 1등성 스피카가 밤하늘에서 눈에 띕니다.',
+        myth:'대지와 곡물의 여신 데메테르 또는 정의의 여신 아스트라이아를 상징한다고 전해집니다.',
+        deepsky:'M87(초대질량 블랙홀 타원은하), M104(솜브레로 은하)',
+        stars:[
+          {id:'spica',name:'스피카',x:610,y:480,mag:1},
+          {id:'porrima',name:'포리마',x:560,y:430,mag:2.7},
+          {id:'vindemiatrix',name:'빈데미아트릭스',x:650,y:400,mag:2.8}
+        ],
+        lines:[['spica','porrima'],['porrima','vindemiatrix']]
+      },
+      {
+        id:'leo', name:'사자자리', nameEn:'Leo',
+        desc:'물음표를 뒤집은 듯한 "낫" 모양의 머리와 삼각형 몸통이 특징으로, 봄철 하늘에서 사자가 웅크린 모습을 그립니다. 가장 밝은 별 레굴루스는 사자의 심장 자리에서 빛납니다.',
+        myth:'헤라클레스가 물리친 네메아의 사자를 기려 하늘에 올렸다는 그리스 신화 속 별자리입니다.',
+        deepsky:'M65·M66(레오 삼중은하), NGC 3370',
+        stars:[
+          {id:'regulus',name:'레굴루스',x:700,y:430,mag:1.4},
+          {id:'algieba',name:'알기에바',x:720,y:360,mag:2.1},
+          {id:'adhafera',name:'아드하페라',x:700,y:310,mag:3.4},
+          {id:'zosma',name:'조스마',x:800,y:340,mag:2.6},
+          {id:'chertan',name:'체르탄',x:810,y:380,mag:3.3},
+          {id:'denebola',name:'데네볼라',x:870,y:390,mag:2.1}
+        ],
+        lines:[['regulus','algieba'],['algieba','adhafera'],['algieba','zosma'],['zosma','chertan'],['chertan','denebola'],['chertan','regulus']]
+      }
+    ]
+  },
+  summer: {
+    label:'여름', icon:'☀️', color:'var(--summer)', colorRaw:'#67e8f9',
+    title:'여름철 별자리', subtitle:'6월 ~ 8월 저녁 9시경 머리 위~남쪽 하늘',
+    asterisms:[
+      { name:'여름의 대삼각형', points:[['lyra','vega'],['cygnus','deneb'],['aquila','altair']] }
+    ],
+    constellations:[
+      {
+        id:'lyra', name:'거문고자리', nameEn:'Lyra',
+        desc:'여름철 밤하늘에서 가장 밝게 빛나는 별, 직녀성(베가)을 품은 작은 별자리입니다.',
+        myth:'음악의 신 오르페우스가 연주하던 리라(수금)가 하늘로 올라가 별자리가 되었다는 전설이 있습니다.',
+        stars:[
+          {id:'vega',name:'베가 (직녀성)',x:640,y:130,mag:0},
+          {id:'sheliak',name:'셸리악',x:685,y:175,mag:3.5},
+          {id:'sulafat',name:'술라팟',x:670,y:225,mag:3.2},
+          {id:'delta_lyr',name:'델타 리라이',x:615,y:190,mag:4.3}
+        ],
+        lines:[['vega','sheliak'],['sheliak','sulafat'],['sulafat','delta_lyr'],['delta_lyr','vega']]
+      },
+      {
+        id:'cygnus', name:'백조자리', nameEn:'Cygnus',
+        desc:'북십자성으로도 불리며, 은하수를 가로지르는 큰 십자가 모양이 특징입니다. 바로 곁에는 작은여우자리, 화살자리 같은 아기자기한 별자리도 숨어 있어요.',
+        myth:'제우스가 백조로 변신해 스파르타의 왕비 레다를 만났다는 이야기에서 유래했습니다.',
+        stars:[
+          {id:'deneb',name:'데네브',x:500,y:80,mag:1.3},
+          {id:'sadr',name:'사드르',x:500,y:175,mag:2.2},
+          {id:'albireo',name:'알비레오',x:500,y:340,mag:3.1},
+          {id:'gienah',name:'기에나',x:415,y:210,mag:2.5},
+          {id:'delta_cyg',name:'델타 시그니',x:585,y:210,mag:2.9}
+        ],
+        lines:[['deneb','sadr'],['sadr','albireo'],['gienah','sadr'],['sadr','delta_cyg']]
+      },
+      {
+        id:'aquila', name:'독수리자리', nameEn:'Aquila',
+        desc:'견우성(알타이르)을 중심으로 한 독수리 모양의 별자리로, 견우와 직녀 이야기의 주인공입니다.',
+        myth:'제우스의 심부름을 하던 독수리, 혹은 견우직녀 설화의 견우성으로 널리 알려져 있습니다.',
+        stars:[
+          {id:'altair',name:'알타이르 (견우성)',x:330,y:330,mag:0.8},
+          {id:'tarazed',name:'타라제드',x:300,y:295,mag:2.7},
+          {id:'alshain',name:'알샤인',x:360,y:360,mag:3.7}
+        ],
+        lines:[['tarazed','altair'],['altair','alshain']]
+      }
+    ]
+  },
+  autumn: {
+    label:'가을', icon:'🍁', color:'var(--autumn)', colorRaw:'#fdba74',
+    title:'가을철 별자리', subtitle:'9월 ~ 11월 저녁 9시경 남쪽~동쪽 하늘',
+    asterisms:[
+      { name:'가을의 대사각형', points:[['pegasus','markab'],['pegasus','scheat'],['pegasus','algenib'],['andromeda','alpheratz']] }
+    ],
+    constellations:[
+      {
+        id:'pegasus', name:'페가수스자리', nameEn:'Pegasus',
+        desc:'마르카브·스카트·알게니브·안드로메다의 알페라츠, 네 별이 만드는 커다란 사각형 "페가수스 사각형"으로 유명한 별자리입니다. 날개 끝의 별 에니프도 밝게 빛납니다.',
+        myth:'영웅 페르세우스가 메두사를 처치했을 때 흘러나온 피에서 태어난 날개 달린 천마 페가수스를 그린 별자리입니다.',
+        deepsky:'M15(구상성단), NGC 7814',
+        stars:[
+          {id:'markab',name:'마르카브',x:330,y:330,mag:2.5},
+          {id:'scheat',name:'스카트',x:330,y:200,mag:2.4},
+          {id:'algenib',name:'알게니브',x:540,y:330,mag:2.8},
+          {id:'alpheratz',name:'알페라츠',x:540,y:200,mag:2.1},
+          {id:'enif',name:'에니프',x:250,y:300,mag:2.4}
+        ],
+        lines:[['markab','scheat'],['scheat','alpheratz'],['alpheratz','algenib'],['algenib','markab'],['markab','enif']]
+      },
+      {
+        id:'andromeda', name:'안드로메다자리', nameEn:'Andromeda',
+        desc:'페가수스의 대사각형에서 이어지는 별줄기로, 유명한 안드로메다 은하(M31)가 이 별자리 방향에 있습니다.',
+        myth:'에티오피아의 공주 안드로메다가 바다 괴물의 제물이 될 뻔했으나 영웅 페르세우스에게 구출된 신화가 전해집니다.',
+        deepsky:'M31(안드로메다 은하), M110',
+        stars:[
+          {id:'alpheratz2',name:'알페라츠',x:540,y:200,mag:2.1},
+          {id:'mirach',name:'미라크',x:650,y:230,mag:2.1},
+          {id:'almach',name:'알마크',x:760,y:270,mag:2.3}
+        ],
+        lines:[['alpheratz2','mirach'],['mirach','almach']]
+      },
+      {
+        id:'cassiopeia', name:'카시오페이아자리', nameEn:'Cassiopeia',
+        desc:'알파벳 W(또는 M) 모양으로 쉽게 알아볼 수 있는, 북쪽 하늘의 대표 별자리입니다.',
+        myth:'자신의 미모를 자랑하다 포세이돈의 노여움을 산 에티오피아의 왕비 카시오페이아를 그린 별자리입니다.',
+        deepsky:'M52(산개성단), NGC 281(팩맨 성운)',
+        stars:[
+          {id:'segin',name:'세긴',x:790,y:150,mag:3.4},
+          {id:'ruchbah',name:'루크바',x:740,y:110,mag:2.7},
+          {id:'gamma_cas',name:'감마 카시오페이아이',x:680,y:140,mag:2.2},
+          {id:'schedar',name:'셰다르',x:630,y:100,mag:2.2},
+          {id:'caph',name:'카프',x:580,y:140,mag:2.3}
+        ],
+        lines:[['caph','schedar'],['schedar','gamma_cas'],['gamma_cas','ruchbah'],['ruchbah','segin']]
+      }
+    ]
+  },
+  winter: {
+    label:'겨울', icon:'❄️', color:'var(--winter)', colorRaw:'#c4b5fd',
+    title:'겨울철 별자리', subtitle:'12월 ~ 2월 저녁 9시경 남쪽 하늘',
+    asterisms:[
+      { name:'겨울의 대삼각형', points:[['orion','betelgeuse'],['canisMajor','sirius'],['canisMinor','procyon']] },
+      { name:'겨울의 대육각형(다이아몬드)', points:[['taurus','aldebaran'],['auriga','capella'],['gemini','pollux'],['canisMinor','procyon'],['canisMajor','sirius'],['orion','rigel']] }
+    ],
+    constellations:[
+      {
+        id:'orion', name:'오리온자리', nameEn:'Orion',
+        desc:'겨울철 밤하늘의 왕이라 불리는 별자리로, 나란히 늘어선 삼태성(허리띠 세 별)이 특징입니다. 몸통 귀퉁이의 붉은별 베텔게우스와 파란별 리겔은 각각 0.5등급, 0.1등급으로 겨울 하늘에서 가장 밝은 별에 속해요.',
+        myth:'바다의 신 포세이돈의 아들이자 사냥의 명수 오리온이 전갈에 쏘여 죽은 뒤 하늘의 별자리가 되었다고 전해집니다.',
+        deepsky:'M42(오리온 대성운), M43',
+        stars:[
+          {id:'betelgeuse',name:'베텔게우스',x:430,y:180,mag:0.5},
+          {id:'bellatrix',name:'벨라트릭스',x:330,y:190,mag:1.6},
+          {id:'alnitak',name:'알니타크',x:430,y:280,mag:1.9},
+          {id:'alnilam',name:'알닐람',x:390,y:290,mag:1.7},
+          {id:'mintaka',name:'민타카',x:350,y:300,mag:2.2},
+          {id:'rigel',name:'리겔',x:330,y:400,mag:0.1},
+          {id:'saiph',name:'사이프',x:430,y:400,mag:2.1}
+        ],
+        lines:[['betelgeuse','alnitak'],['bellatrix','mintaka'],
+               ['alnitak','alnilam'],['alnilam','mintaka'],
+               ['mintaka','rigel'],['alnitak','saiph'],['betelgeuse','bellatrix'],['rigel','saiph']]
+      },
+      {
+        id:'canisMajor', name:'큰개자리', nameEn:'Canis Major',
+        desc:'오리온의 충직한 사냥개로 알려진 별자리로, 밤하늘 전체에서 가장 밝은 별 시리우스가 빛나고 있습니다. 고대 이집트에서는 시리우스가 새벽하늘에 떠오르는 시기를 보고 나일강이 불어나는 때를 예측했다고 해요.',
+        myth:'사냥꾼 오리온이 데리고 다니던 충직한 사냥개를 그렸다는 이야기가 전해집니다.',
+        deepsky:'M41(산개성단), NGC 2359(토르의 투구 성운)',
+        stars:[
+          {id:'sirius',name:'시리우스',x:480,y:480,mag:-1.5},
+          {id:'mirzam',name:'미르잠',x:430,y:450,mag:2},
+          {id:'wezen',name:'웨젠',x:520,y:520,mag:1.8},
+          {id:'adhara',name:'아다라',x:470,y:540,mag:1.5}
+        ],
+        lines:[['mirzam','sirius'],['sirius','wezen'],['sirius','adhara']]
+      },
+      {
+        id:'canisMinor', name:'작은개자리', nameEn:'Canis Minor',
+        desc:'프로키온 단 한 개의 밝은 별로도 존재감을 드러내는 작은 별자리로, 큰개자리·오리온자리와 함께 겨울철 대삼각형을 이룹니다.',
+        myth:'큰개자리와 함께 오리온을 따르는 또 다른 충직한 사냥개로 전해집니다.',
+        stars:[
+          {id:'procyon',name:'프로키온',x:560,y:270,mag:0.4}
+        ],
+        lines:[]
+      },
+      {
+        id:'taurus', name:'황소자리', nameEn:'Taurus',
+        desc:'오리온자리 북서쪽에서 커다란 V자 모양을 이루는 별자리로, 오리온에게 달려드는 황소의 뿔 달린 머리를 나타냅니다. V자의 밝은 별 알데바란 주변에는 히아데스 성단이, 어깨에는 플레이아데스(좀생이별) 성단이 있어 맨눈으로도 쉽게 찾을 수 있어요.',
+        myth:'제우스가 변신한 황소가 페니키아의 공주 에우로파를 등에 태우고 바다를 건넜다는 신화가 전해집니다.',
+        deepsky:'M45(플레이아데스 성단), M1(게 성운)',
+        stars:[
+          {id:'aldebaran',name:'알데바란',x:230,y:290,mag:0.9},
+          {id:'elnath',name:'엘나트',x:180,y:150,mag:1.7},
+          {id:'ain',name:'아인',x:270,y:250,mag:3.5}
+        ],
+        lines:[['ain','aldebaran'],['aldebaran','elnath']]
+      },
+      {
+        id:'gemini', name:'쌍둥이자리', nameEn:'Gemini',
+        desc:'카스토르와 폴룩스, 두 밝은 별이 나란히 놓여 쌍둥이 형제의 머리를 나타냅니다. 황도 12궁 중 가장 북쪽에 있는 별자리로, 태양이 이 별자리에 들어서면 하지가 돼요.',
+        myth:'제우스의 아들 폴룩스가 죽은 이복형제 카스토르와 영원히 함께 있고자 하늘로 올라갔다는 이야기입니다.',
+        deepsky:'M35(산개성단)',
+        stars:[
+          {id:'castor',name:'카스토르',x:560,y:100,mag:1.6},
+          {id:'pollux',name:'폴룩스',x:600,y:140,mag:1.1}
+        ],
+        lines:[['castor','pollux']]
+      },
+      {
+        id:'auriga', name:'마차부자리', nameEn:'Auriga',
+        desc:'황소자리 위쪽에서 노란빛 1등성 카펠라를 중심으로 오각형을 이루는 별자리입니다. 왼쪽 아래에는 쌍둥이자리가 어깨동무하듯 나란히 서 있어요.',
+        myth:'다리가 불편했던 아테네의 왕 에릭토니우스가 발명한 사륜마차를 몰던 모습이라는 이야기가 전해집니다.',
+        stars:[
+          {id:'capella',name:'카펠라',x:330,y:60,mag:0.1},
+          {id:'menkalinan',name:'멘칼리난',x:400,y:90,mag:1.9}
+        ],
+        lines:[['capella','menkalinan']]
+      },
+      {
+        id:'cancer', name:'게자리', nameEn:'Cancer',
+        desc:'겨울에서 봄 사이 초저녁 하늘 한가운데서 볼 수 있는 희미한 별자리로, 뚜렷하게 밝은 별은 없지만 몸 한가운데에 프레세페(벌집성단) 산개성단이 뿌연 얼룩처럼 보입니다.',
+        myth:'그리스 신화에서 헤라클레스가 히드라와 싸울 때 발가락을 물었다는 게가 하늘로 올려져 별자리가 되었다고 전해집니다.',
+        deepsky:'M44(프레세페, 벌집성단)',
+        stars:[
+          {id:'asellus_borealis',name:'아셀루스 보레알리스',x:700,y:90,mag:4.7},
+          {id:'asellus_australis',name:'아셀루스 아우스트랄리스',x:715,y:130,mag:3.9},
+          {id:'iota_cnc',name:'이오타 칸크리',x:670,y:150,mag:4.0},
+          {id:'acubens',name:'아쿠벤스',x:730,y:200,mag:4.3}
+        ],
+        lines:[['asellus_borealis','asellus_australis'],['asellus_australis','iota_cnc'],['asellus_australis','acubens']]
+      },
+      {
+        id:'lepus', name:'토끼자리', nameEn:'Lepus',
+        desc:'오리온자리 바로 아래에 자리한 작고 아담한 별자리로, 사냥꾼 오리온에게 쫓기는 토끼의 모습을 그립니다.',
+        myth:'사냥꾼 오리온과 그의 사냥개들(큰개자리·작은개자리)에게 늘 쫓기는 신세라는 재미있는 이야기가 전해집니다.',
+        stars:[
+          {id:'arneb',name:'아르네브',x:370,y:460,mag:2.6},
+          {id:'nihal',name:'니할',x:345,y:490,mag:2.8},
+          {id:'lep_epsilon',name:'엡실론 레포리스',x:420,y:470,mag:3.2},
+          {id:'lep_gamma',name:'감마 레포리스',x:400,y:500,mag:3.6}
+        ],
+        lines:[['arneb','nihal'],['arneb','lep_epsilon'],['lep_epsilon','lep_gamma'],['lep_gamma','nihal']]
+      }
+    ]
+  }
+};
+
+/* --------------- Background twinkle canvas --------------- */
+const bgCanvas = document.getElementById('bgstars');
+const bgCtx = bgCanvas.getContext('2d');
+let bgParticles = [];
+function resizeBg(){
+  bgCanvas.width = window.innerWidth;
+  bgCanvas.height = document.body.scrollHeight;
+  bgParticles = Array.from({length: Math.floor(bgCanvas.width*bgCanvas.height/9000)}, () => ({
+    x: Math.random()*bgCanvas.width,
+    y: Math.random()*bgCanvas.height,
+    r: Math.random()*1.3+0.2,
+    speed: Math.random()*0.02+0.005,
+    phase: Math.random()*Math.PI*2
+  }));
+}
+function drawBg(t){
+  bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+  for(const p of bgParticles){
+    const alpha = 0.35 + 0.65*Math.abs(Math.sin(p.phase + t*p.speed));
+    bgCtx.beginPath();
+    bgCtx.fillStyle = `rgba(230,235,255,${alpha.toFixed(2)})`;
+    bgCtx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    bgCtx.fill();
+  }
+  requestAnimationFrame(drawBg);
+}
+window.addEventListener('resize', resizeBg);
+resizeBg();
+requestAnimationFrame(drawBg);
+
+/* --------------- App state --------------- */
+let currentSeason = 'spring';
+let currentConId = null;
+let showLabels = false;
+let activeAsterisms = new Set();
+const ASTERISM_COLORS = ['#fbbf24', '#a78bfa'];
+
+const seasonNav = document.getElementById('seasonNav');
+const skymap = document.getElementById('skymap');
+const conList = document.getElementById('conList');
+const infoCard = document.getElementById('infoCard');
+const seasonTitle = document.getElementById('seasonTitle');
+const seasonSubtitle = document.getElementById('seasonSubtitle');
+const tooltip = document.getElementById('tooltip');
+const stage = document.querySelector('.stage');
+const asterismToggles = document.getElementById('asterismToggles');
+
+function buildNav(){
+  seasonNav.innerHTML = '';
+  Object.entries(SEASONS).forEach(([key, s]) => {
+    const btn = document.createElement('button');
+    btn.textContent = `${s.icon} ${s.label}`;
+    btn.style.setProperty('--season-color', s.colorRaw);
+    if(key===currentSeason) btn.classList.add('active');
+    btn.addEventListener('click', () => {
+      currentSeason = key;
+      currentConId = null;
+      activeAsterisms = new Set();
+      render();
+    });
+    seasonNav.appendChild(btn);
+  });
+}
+
+function renderAsterismToggles(){
+  const s = SEASONS[currentSeason];
+  asterismToggles.innerHTML = '';
+  s.asterisms.forEach((ast, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'toggle-btn' + (activeAsterisms.has(idx) ? ' on' : '');
+    btn.textContent = `${ast.name} 보기`;
+    if(activeAsterisms.has(idx)){
+      btn.style.background = ASTERISM_COLORS[idx % ASTERISM_COLORS.length];
+      btn.style.color = '#05070f';
+      btn.style.borderColor = 'transparent';
+    }
+    btn.addEventListener('click', () => {
+      if(activeAsterisms.has(idx)) activeAsterisms.delete(idx);
+      else activeAsterisms.add(idx);
+      render();
+    });
+    asterismToggles.appendChild(btn);
+  });
+}
+
+function findStar(season, refId){
+  for(const c of season.constellations){
+    const st = c.stars.find(s => s.id === refId);
+    if(st) return st;
+  }
+  return null;
+}
+
+function renderMap(){
+  const s = SEASONS[currentSeason];
+  document.documentElement.style.setProperty('--season-color', s.colorRaw);
+  stage.style.setProperty('--season-color', s.colorRaw);
+  skymap.innerHTML = '';
+  skymap.classList.toggle('show-labels', showLabels);
+
+  // asterism guides (draw first, underneath)
+  s.asterisms.forEach((asterism, idx) => {
+    if(!activeAsterisms.has(idx)) return;
+    const pts = asterism.points.map(([conId, starId]) => {
+      const con = s.constellations.find(c=>c.id===conId);
+      return con ? con.stars.find(st=>st.id===starId) : null;
+    }).filter(Boolean);
+    if(pts.length < 2) return;
+    const color = ASTERISM_COLORS[idx % ASTERISM_COLORS.length];
+    const d = pts.map((p,i)=> `${i===0?'M':'L'}${p.x},${p.y}`).join(' ') + ' Z';
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', d);
+    path.setAttribute('class','asterism-line');
+    path.setAttribute('stroke', color);
+    skymap.appendChild(path);
+    const cx = pts.reduce((a,p)=>a+p.x,0)/pts.length;
+    const cy = pts.reduce((a,p)=>a+p.y,0)/pts.length;
+    const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+    label.setAttribute('x', cx);
+    label.setAttribute('y', cy);
+    label.setAttribute('class','asterism-label');
+    label.setAttribute('fill', color);
+    label.setAttribute('text-anchor','middle');
+    label.textContent = asterism.name;
+    skymap.appendChild(label);
+  });
+
+  s.constellations.forEach(con => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','con-group' + (con.id===currentConId ? ' active' : ''));
+    g.dataset.conId = con.id;
+
+    con.lines.forEach(([a,b]) => {
+      const sa = con.stars.find(st=>st.id===a);
+      const sb = con.stars.find(st=>st.id===b);
+      if(!sa || !sb) return;
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1', sa.x); line.setAttribute('y1', sa.y);
+      line.setAttribute('x2', sb.x); line.setAttribute('y2', sb.y);
+      line.setAttribute('class','con-line');
+      g.appendChild(line);
+    });
+
+    con.stars.forEach(st => {
+      const r = Math.max(2.2, 6 - st.mag*1.1);
+      const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      dot.setAttribute('cx', st.x); dot.setAttribute('cy', st.y); dot.setAttribute('r', r);
+      dot.setAttribute('class','star-dot');
+      dot.addEventListener('mousemove', (e) => showTooltip(e, `${st.name} · 등급 ${st.mag}`));
+      dot.addEventListener('mouseleave', hideTooltip);
+      g.appendChild(dot);
+
+      const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+      label.setAttribute('x', st.x + r + 4);
+      label.setAttribute('y', st.y - r - 3);
+      label.setAttribute('class','star-label');
+      label.textContent = st.name;
+      g.appendChild(label);
+    });
+
+    const anchor = con.stars[0];
+    if(anchor){
+      const nameLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+      nameLabel.setAttribute('x', anchor.x);
+      nameLabel.setAttribute('y', anchor.y - 22);
+      nameLabel.setAttribute('class','con-name-label');
+      nameLabel.setAttribute('text-anchor','middle');
+      nameLabel.textContent = con.name;
+      g.appendChild(nameLabel);
+    }
+
+    g.addEventListener('click', () => {
+      currentConId = con.id;
+      render();
+    });
+
+    skymap.appendChild(g);
+  });
+}
+
+function showTooltip(e, text){
+  const rect = stage.getBoundingClientRect();
+  tooltip.textContent = text;
+  tooltip.style.left = (e.clientX - rect.left) + 'px';
+  tooltip.style.top = (e.clientY - rect.top) + 'px';
+  tooltip.classList.add('show');
+}
+function hideTooltip(){ tooltip.classList.remove('show'); }
+
+function renderList(){
+  const s = SEASONS[currentSeason];
+  conList.innerHTML = '';
+  s.constellations.forEach(con => {
+    const item = document.createElement('div');
+    item.className = 'con-item' + (con.id===currentConId ? ' active' : '');
+    item.innerHTML = `<span class="kor">${con.name}</span><span class="eng">${con.nameEn}</span>`;
+    item.addEventListener('click', () => { currentConId = con.id; render(); });
+    conList.appendChild(item);
+  });
+}
+
+function renderInfo(){
+  const s = SEASONS[currentSeason];
+  const con = s.constellations.find(c => c.id === currentConId);
+  if(!con){
+    infoCard.innerHTML = '<div class="placeholder">별자리를 선택하면<br>여기에 설명이 나타납니다 ✨</div>';
+    return;
+  }
+  infoCard.innerHTML = `
+    <h3>${con.name}</h3>
+    <span class="eng-name">${con.nameEn}</span>
+    <p class="desc">${con.desc}</p>
+    <p class="myth">📜 ${con.myth}</p>
+    ${con.deepsky ? `<p class="deepsky">🔭 볼거리: ${con.deepsky}</p>` : ''}
+  `;
+}
+
+function renderHeader(){
+  const s = SEASONS[currentSeason];
+  seasonTitle.textContent = `${s.icon} ${s.title}`;
+  seasonSubtitle.textContent = s.subtitle;
+  seasonTitle.style.setProperty('--season-color', s.colorRaw);
+}
+
+function render(){
+  buildNav();
+  renderHeader();
+  renderMap();
+  renderList();
+  renderInfo();
+  renderAsterismToggles();
+}
+
+document.getElementById('toggleLabels').addEventListener('click', (e) => {
+  showLabels = !showLabels;
+  e.target.classList.toggle('on', showLabels);
+  skymap.classList.toggle('show-labels', showLabels);
+});
+
+render();
+</script>
+</body>
+</html>
